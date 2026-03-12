@@ -1606,16 +1606,7 @@ if (!window._waitLogin) init();
    会话：sessionStorage，关闭标签页需重新登录
 ════════════════════════════════════════════════════════════════ */
 
-// ── 设置你的密码（修改这里）──────────────────────────────────────
-// 当前密码：Kk955832..+
 const PASSWORD_HASH = '4381aa9c1771d9d3527df41d08cef31e93cd38f8b5e8899dd17ebe6e96945c32';
-// 上面是 "IMC@2026" 的 SHA-256 哈希值
-// 如需修改密码，在浏览器控制台运行：
-//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('你的新密码'))
-//     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
-// 把输出的哈希值替换上面的字符串即可
-// ────────────────────────────────────────────────────────────────
-
 const SESSION_KEY = 'imc_auth';
 
 async function sha256(str) {
