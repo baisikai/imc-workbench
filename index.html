@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMC 工作台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══ LIGHT THEME VARS ══════════════════════════════════════════ */
+:root{
+  --bg:       #f0f4f8;
+  --bg2:      #e8edf3;
+  --surface:  #ffffff;
+  --surface2: #f7f9fc;
+  --surface3: #eef2f7;
+  --border:   #dde3ec;
+  --border2:  #c8d3e0;
+  --shadow:   rgba(60,80,120,.08);
+  --shadow2:  rgba(60,80,120,.14);
+
+  --accent:   #2563eb;
+  --accent-l: #dbeafe;
+  --accent2:  #0891b2;
+  --accent3:  #7c3aed;
+  --green:    #059669;
+  --green-l:  #d1fae5;
+  --orange:   #d97706;
+  --orange-l: #fef3c7;
+  --red:      #dc2626;
+  --red-l:    #fee2e2;
+  --pink:     #db2777;
+  --teal:     #0d9488;
+
+  --text:     #1e293b;
+  --dim:      #475569;
+  --muted:    #94a3b8;
+  --mono:     'JetBrains Mono', monospace;
+  --sans:     'Noto Sans SC', sans-serif;
+  --serif:    'Noto Serif SC', serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+/* subtle dot pattern */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:radial-gradient(circle,#b8c7d9 1px,transparent 1px);
+  background-size:28px 28px;opacity:.35;pointer-events:none;z-index:0;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────── */
+.topbar{
+  position:relative;z-index:10;display:flex;align-items:center;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 20px;height:58px;flex-shrink:0;
+  box-shadow:0 1px 4px var(--shadow);
+}
+.brand{display:flex;align-items:center;gap:11px;margin-right:28px;}
+.brand-badge{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#2563eb,#7c3aed);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;
+  box-shadow:0 2px 8px rgba(37,99,235,.35);
+}
+.brand-name{font-weight:700;font-size:15px;letter-spacing:.03em;color:var(--text);}
+.brand-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:1px;}
+
+.nav-tabs{display:flex;gap:2px;height:100%;align-items:flex-end;}
+.nav-tab{
+  display:flex;align-items:center;gap:7px;padding:0 18px;height:42px;
+  border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);
+  background:transparent;transition:all .2s;user-select:none;position:relative;top:1px;
+}
+.nav-tab:hover{color:var(--dim);background:var(--surface3);}
+.nav-tab.active{
+  color:var(--accent);background:var(--surface);
+  border-color:var(--border);border-bottom-color:var(--surface);
+  font-weight:600;
+}
+.tab-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6;}
+
+/* ── Clock ──────────────────────────────────────────────────── */
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.clock-box{
+  display:flex;flex-direction:column;align-items:flex-end;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:5px 14px;line-height:1.3;
+}
+.clock-time{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);letter-spacing:.04em;}
+.clock-date{font-size:11px;color:var(--dim);}
+.clock-lunar{font-family:var(--serif);font-size:10px;color:var(--muted);}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.main{flex:1;overflow:hidden;position:relative;z-index:1;display:flex;flex-direction:column;}
+.tab-panel{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.tab-panel.active{display:flex;}
+
+/* ═══ NAV PANEL ═════════════════════════════════════════════════ */
+.nav-inner{flex:1;overflow-y:auto;padding:24px 24px 40px;}
+.nav-inner::-webkit-scrollbar{width:5px;}
+.nav-inner::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+.search-wrap{position:relative;flex:1;max-width:420px;}
+.search-wrap input{
+  width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:9px 14px 9px 38px;font-size:13px;font-family:var(--sans);color:var(--text);
+  outline:none;transition:all .2s;box-shadow:0 1px 3px var(--shadow);
+}
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.search-wrap input::placeholder{color:var(--muted);}
+.s-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;}
+
+.btn{display:flex;align-items:center;gap:6px;padding:8px 15px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface);color:var(--dim);
+  font-size:13px;font-family:var(--sans);cursor:pointer;transition:all .2s;
+  white-space:nowrap;box-shadow:0 1px 3px var(--shadow);}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(37,99,235,.3);}
+.btn-primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff;}
+
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;}
+.fbtn{
+  padding:5px 13px;border-radius:20px;border:1px solid var(--border);
+  background:var(--surface);color:var(--muted);font-size:11px;font-family:var(--sans);
+  cursor:pointer;transition:all .18s;white-space:nowrap;box-shadow:0 1px 2px var(--shadow);
+}
+.fbtn:hover{border-color:var(--accent);color:var(--accent);}
+.fbtn.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(37,99,235,.25);}
+
+.section{margin-bottom:32px;}
+.section-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.section-lbl{font-size:10px;font-family:var(--mono);font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+.section-hr{flex:1;height:1px;background:var(--border);}
+.section-ct{font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:4px;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(264px,1fr));gap:13px;}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:17px;
+  cursor:pointer;transition:all .22s cubic-bezier(.4,0,.2,1);text-decoration:none;display:block;
+  position:relative;overflow:hidden;animation:fadeUp .4s ease both;
+  box-shadow:0 1px 4px var(--shadow);
+}
+.card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 24px var(--shadow2);}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px;}
+.card-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.card-acts{display:flex;gap:4px;opacity:0;transition:opacity .2s;}
+.card:hover .card-acts{opacity:1;}
+.cact{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;color:var(--dim);transition:all .15s;}
+.cact.edit:hover{color:var(--orange);border-color:var(--orange);background:var(--orange-l);}
+.cact.del:hover{color:var(--red);border-color:var(--red);background:var(--red-l);}
+.card-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.card-url{font-size:11px;font-family:var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.card-tag{display:inline-block;margin-top:10px;padding:2px 9px;border-radius:5px;font-size:10px;font-family:var(--mono);font-weight:600;}
+
+/* card icon color palettes (light) */
+.ci-blue{background:#dbeafe;color:#1d4ed8;}
+.ci-cyan{background:#cffafe;color:#0e7490;}
+.ci-purple{background:#ede9fe;color:#6d28d9;}
+.ci-green{background:#d1fae5;color:#065f46;}
+.ci-orange{background:#fef3c7;color:#92400e;}
+.ci-pink{background:#fce7f3;color:#9d174d;}
+.ci-red{background:#fee2e2;color:#991b1b;}
+.ci-teal{background:#ccfbf1;color:#115e59;}
+/* tag */
+.ct-monitor{background:#d1fae5;color:#065f46;}
+.ct-devops{background:#ede9fe;color:#6d28d9;}
+.ct-db{background:#dbeafe;color:#1d4ed8;}
+.ct-biz{background:#fef3c7;color:#92400e;}
+.ct-collab{background:#fce7f3;color:#9d174d;}
+.ct-infra{background:#cffafe;color:#0e7490;}
+.ct-net{background:#ccfbf1;color:#115e59;}
+.ct-ext{background:#fee2e2;color:#991b1b;}
+
+.empty{text-align:center;padding:60px;color:var(--muted);font-size:14px;display:none;}
+.empty.show{display:block;}
+
+/* ═══ DOC PANEL ══════════════════════════════════════════════════ */
+.doc-layout{display:flex;flex:1;overflow:hidden;}
+.doc-sidebar{width:252px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;box-shadow:1px 0 4px var(--shadow);}
+.sb-hd{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sb-title{font-size:11px;font-family:var(--mono);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.sb-add{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--dim);transition:all .15s;}
+.sb-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
+.sb-search{padding:9px 12px;border-bottom:1px solid var(--border);}
+.sb-search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  padding:7px 11px;font-size:12px;font-family:var(--sans);color:var(--text);outline:none;transition:border-color .2s;}
+.sb-search input:focus{border-color:var(--accent);}
+.sb-search input::placeholder{color:var(--muted);}
+.doc-list{flex:1;overflow-y:auto;padding:6px;}
+.doc-list::-webkit-scrollbar{width:4px;}
+.doc-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.doc-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;
+  transition:all .15s;border:1px solid transparent;margin-bottom:2px;}
+.doc-item:hover{background:var(--surface2);border-color:var(--border);}
+.doc-item.active{background:var(--accent-l);border-color:rgba(37,99,235,.3);}
+.di-icon{font-size:14px;flex-shrink:0;width:20px;text-align:center;}
+.di-info{flex:1;min-width:0;}
+.di-name{font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.di-meta{font-size:10px;font-family:var(--mono);color:var(--muted);margin-top:1px;}
+.di-del{opacity:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+  border-radius:4px;font-size:11px;color:var(--muted);transition:all .15s;flex-shrink:0;}
+.doc-item:hover .di-del{opacity:1;}
+.di-del:hover{color:var(--red);background:var(--red-l);}
+.doc-empty{text-align:center;padding:36px 14px;color:var(--muted);font-size:12px;line-height:1.7;}
+
+.doc-editor{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);}
+.ed-bar{padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface);box-shadow:0 1px 3px var(--shadow);}
+.ed-title{flex:1;background:transparent;border:none;outline:none;font-size:15px;font-weight:600;font-family:var(--sans);color:var(--text);}
+.ed-title::placeholder{color:var(--muted);}
+.type-sel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--dim);outline:none;cursor:pointer;}
+.ed-save{padding:6px 14px;border-radius:7px;border:none;background:var(--accent);color:#fff;
+  font-size:12px;font-family:var(--sans);font-weight:600;cursor:pointer;transition:all .2s;}
+.ed-save:hover{background:#1d4ed8;}
+.ed-save.saved{background:var(--green);}
+.ed-del{padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);
+  color:var(--muted);font-size:12px;cursor:pointer;transition:all .2s;}
+.ed-del:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
+.ed-meta{padding:7px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-shrink:0;background:var(--surface2);}
+.mi{font-size:10px;font-family:var(--mono);color:var(--muted);}
+.mi span{color:var(--dim);}
+.ed-body{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.ed-body .CodeMirror{
+  flex:1;height:100%;font-family:var(--mono)!important;font-size:13px!important;
+  line-height:1.75!important;background:#fafbfd!important;color:var(--text)!important;
+  border:none!important;
+}
+.ed-body .CodeMirror-scroll{height:100%;}
+.ed-body .CodeMirror-gutters{background:#f1f5f9!important;border-right:1px solid var(--border)!important;}
+.ed-body .CodeMirror-linenumber{color:var(--muted)!important;font-size:11px!important;padding:0 10px 0 6px!important;}
+.ed-body .CodeMirror-activeline-background{background:rgba(37,99,235,.04)!important;}
+.ed-body .CodeMirror-selected{background:rgba(37,99,235,.12)!important;}
+.ed-body .CodeMirror-cursor{border-left:2px solid var(--accent)!important;}
+/* 折叠箭头 */
+.ed-body .CodeMirror-foldgutter{width:14px;}
+.ed-body .CodeMirror-foldmarker{color:var(--accent);cursor:pointer;}
+.no-doc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:13px;}
+.no-doc-ico{font-size:46px;opacity:.25;}
+.no-doc-txt{font-size:13px;text-align:center;line-height:1.7;color:var(--muted);}
+.no-doc-btn{padding:9px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface);
+  color:var(--dim);font-size:13px;font-family:var(--sans);cursor:pointer;transition:all .2s;box-shadow:0 1px 3px var(--shadow);}
+.no-doc-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
+
+/* ═══ ORACLE PANEL ═══════════════════════════════════════════════ */
+.ora-layout{display:flex;flex:1;overflow:hidden;flex-direction:column;}
+.ora-conn-bar{
+  display:flex;align-items:center;gap:10px;padding:10px 18px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  flex-shrink:0;box-shadow:0 1px 4px var(--shadow);flex-wrap:wrap;
+}
+.conn-label{font-size:11px;font-family:var(--mono);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.conn-input{
+  background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  padding:6px 11px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;transition:border-color .2s;
+}
+.conn-input:focus{border-color:var(--accent);}
+.conn-input::placeholder{color:var(--muted);}
+.conn-input.w-host{width:160px;}
+.conn-input.w-port{width:70px;}
+.conn-input.w-sid{width:100px;}
+.conn-input.w-user{width:110px;}
+.conn-input.w-pass{width:110px;}
+.conn-sep{color:var(--border2);font-size:16px;}
+.conn-status{display:flex;align-items:center;gap:6px;font-size:12px;font-family:var(--mono);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .3s;}
+.status-dot.ok{background:var(--green);}
+.status-dot.err{background:var(--red);}
+.status-dot.connecting{background:var(--orange);animation:pulse 1s infinite;}
+.status-txt{color:var(--dim);}
+
+.ora-body{display:flex;flex:1;overflow:hidden;}
+
+/* SQL Sidebar */
+.ora-sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.ora-sb-hd{padding:11px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.ora-sb-title{font-size:10px;font-family:var(--mono);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.sql-hist-list{flex:1;overflow-y:auto;padding:6px;}
+.sql-hist-list::-webkit-scrollbar{width:4px;}
+.sql-hist-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.hist-item{padding:8px 10px;border-radius:7px;border:1px solid transparent;cursor:pointer;margin-bottom:3px;transition:all .15s;}
+.hist-item:hover{background:var(--surface2);border-color:var(--border);}
+.hist-item.active{background:var(--accent-l);border-color:rgba(37,99,235,.25);}
+.hist-name{font-size:11px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hist-meta{font-size:10px;font-family:var(--mono);color:var(--muted);margin-top:2px;}
+.hist-del{display:none;float:right;font-size:10px;color:var(--muted);padding:0 3px;}
+.hist-item:hover .hist-del{display:inline;}
+.hist-del:hover{color:var(--red);}
+
+/* Editor + Results */
+.ora-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.ora-editor-area{display:flex;flex-direction:column;border-bottom:3px solid var(--border2);background:var(--surface);}
+.ora-editor-bar{
+  display:flex;align-items:center;gap:8px;padding:9px 14px;
+  border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface2);
+}
+.ora-editor-bar-left{flex:1;display:flex;align-items:center;gap:8px;}
+.sql-name-input{background:transparent;border:none;outline:none;font-size:13px;font-weight:600;font-family:var(--sans);color:var(--text);}
+.sql-name-input::placeholder{color:var(--muted);}
+.btn-run{
+  display:flex;align-items:center;gap:6px;padding:7px 16px;border-radius:7px;
+  border:none;background:var(--green);color:#fff;font-size:13px;font-family:var(--sans);
+  font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 2px 6px rgba(5,150,105,.3);
+}
+.btn-run:hover{background:#047857;transform:translateY(-1px);}
+.btn-run:disabled{background:var(--muted);box-shadow:none;cursor:not-allowed;transform:none;}
+.btn-run-icon{font-size:14px;}
+.btn-explain{
+  display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:7px;
+  border:1px solid var(--border);background:var(--surface);color:var(--dim);
+  font-size:12px;font-family:var(--sans);cursor:pointer;transition:all .2s;
+}
+.btn-explain:hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-format{
+  padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);
+  color:var(--dim);font-size:12px;cursor:pointer;transition:all .2s;
+}
+.btn-format:hover{border-color:var(--accent3);color:var(--accent3);}
+.btn-clear-sql{padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--dim);font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-clear-sql:hover{border-color:var(--red);color:var(--red);}
+.btn-save-sql{padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--dim);font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-save-sql:hover{border-color:var(--orange);color:var(--orange);}
+
+.ora-sql-editor{position:relative;flex-shrink:0;}
+.line-nums{
+  position:absolute;left:0;top:0;bottom:0;width:46px;
+  background:var(--surface2);border-right:1px solid var(--border);
+  font-family:var(--mono);font-size:12px;color:var(--muted);
+  padding:16px 8px;text-align:right;line-height:1.75;user-select:none;overflow:hidden;
+}
+.sql-textarea{
+  width:100%;height:180px;resize:none;background:#fafbfd;border:none;outline:none;
+  padding:16px 16px 16px 58px;font-size:13px;font-family:var(--mono);
+  color:var(--text);line-height:1.75;tab-size:2;
+}
+.sql-textarea::placeholder{color:var(--muted);}
+
+/* Results */
+.ora-results{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);}
+.results-bar{
+  display:flex;align-items:center;gap:12px;padding:8px 16px;
+  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.results-tabs{display:flex;gap:2px;}
+.res-tab{padding:5px 12px;border-radius:6px;border:1px solid transparent;font-size:12px;
+  font-family:var(--mono);cursor:pointer;color:var(--muted);transition:all .15s;}
+.res-tab:hover{color:var(--dim);}
+.res-tab.active{background:var(--accent-l);border-color:rgba(37,99,235,.3);color:var(--accent);font-weight:600;}
+.results-meta{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);}
+.results-meta.ok{color:var(--green);}
+.results-meta.err{color:var(--red);}
+.btn-export{padding:5px 11px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s;}
+.btn-export:hover{border-color:var(--green);color:var(--green);}
+
+.results-panel{flex:1;overflow:auto;padding:0;}
+.results-panel::-webkit-scrollbar{width:6px;height:6px;}
+.results-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* Data table */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono);}
+.data-table th{
+  position:sticky;top:0;background:var(--surface2);border-bottom:2px solid var(--border2);
+  padding:9px 14px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);white-space:nowrap;z-index:2;
+}
+.data-table td{padding:8px 14px;border-bottom:1px solid var(--border);color:var(--dim);white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis;}
+.data-table tr:hover td{background:var(--surface3);}
+.data-table tr:nth-child(even) td{background:rgba(0,0,0,.015);}
+.td-null{color:var(--muted)!important;font-style:italic;}
+.td-num{color:#1d4ed8;}
+.td-date{color:var(--teal);}
+
+/* Message output */
+.msg-output{padding:16px;font-family:var(--mono);font-size:12px;line-height:1.8;white-space:pre-wrap;}
+.msg-ok{color:var(--green);}
+.msg-err{color:var(--red);}
+.msg-warn{color:var(--orange);}
+.msg-info{color:var(--dim);}
+
+.result-placeholder{text-align:center;padding:50px;color:var(--muted);font-size:13px;}
+.result-placeholder-ico{font-size:36px;margin-bottom:12px;opacity:.4;}
+
+/* Loading spinner */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+
+/* ═══ MODAL ══════════════════════════════════════════════════════ */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:200;display:none;
+  align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  width:480px;max-width:95vw;padding:26px;animation:modalIn .25s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 16px 48px rgba(15,23,42,.18);}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:20px;color:var(--text);display:flex;align-items:center;gap:8px;}
+.form-row{margin-bottom:15px;}
+.form-row label{display:block;font-size:10px;font-family:var(--mono);font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.form-row input,.form-row select{width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:9px 13px;font-size:13px;font-family:var(--sans);color:var(--text);outline:none;transition:border-color .2s;}
+.form-row input:focus,.form-row select:focus{border-color:var(--accent);}
+.form-row input::placeholder{color:var(--muted);}
+.icon-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-top:6px;}
+.icon-opt{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:all .15s;}
+.icon-opt.sel,.icon-opt:hover{border-color:var(--accent);background:var(--accent-l);}
+.color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;margin-top:6px;}
+.color-dot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;position:relative;}
+.color-dot.sel::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+.color-dot.sel{border-color:#1e293b;transform:scale(1.15);}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+.btn-cancel{padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--dim);font-size:13px;font-family:var(--sans);cursor:pointer;transition:all .2s;}
+.btn-cancel:hover{color:var(--text);}
+.btn-ok{padding:8px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-family:var(--sans);font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 2px 6px rgba(37,99,235,.3);}
+.btn-ok:hover{background:#1d4ed8;}
+
+/* ═══ KEYFRAMES ══════════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes modalIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ═══ LOGIN SCREEN ════════════════════════════════════════════════ */
+#loginScreen{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#e8edf3 0%,#dbe4f0 50%,#e8edf3 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+#loginScreen::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle,#b8c7d9 1px,transparent 1px);
+  background-size:28px 28px;opacity:.4;pointer-events:none;
+}
+.login-card{
+  position:relative;z-index:1;
+  background:#fff;border:1px solid #dde3ec;border-radius:20px;
+  padding:40px 44px;width:380px;max-width:92vw;
+  box-shadow:0 8px 40px rgba(37,99,235,.12),0 2px 8px rgba(0,0,0,.06);
+  animation:modalIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+.login-logo{
+  width:52px;height:52px;border-radius:14px;margin:0 auto 20px;
+  background:linear-gradient(135deg,#2563eb,#7c3aed);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:16px;color:#fff;
+  box-shadow:0 4px 16px rgba(37,99,235,.35);
+}
+.login-title{text-align:center;font-size:20px;font-weight:700;color:#1e293b;margin-bottom:4px;}
+.login-sub{text-align:center;font-size:12px;color:#94a3b8;font-family:var(--mono);margin-bottom:28px;}
+.login-label{display:block;font-size:11px;font-family:var(--mono);font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:7px;}
+.login-input{
+  width:100%;background:#f7f9fc;border:1px solid #dde3ec;border-radius:10px;
+  padding:12px 16px;font-size:14px;font-family:var(--sans);color:#1e293b;
+  outline:none;transition:all .2s;margin-bottom:16px;
+}
+.login-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1);background:#fff;}
+.login-input::placeholder{color:#94a3b8;}
+.login-btn{
+  width:100%;padding:12px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;
+  font-size:14px;font-family:var(--sans);font-weight:600;
+  cursor:pointer;transition:all .2s;margin-top:4px;
+  box-shadow:0 4px 14px rgba(37,99,235,.35);
+}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.4);}
+.login-btn:active{transform:translateY(0);}
+.login-error{
+  background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;
+  padding:9px 14px;font-size:12px;color:#dc2626;text-align:center;
+  margin-top:12px;display:none;
+}
+.login-error.show{display:block;animation:fadeUp .2s ease;}
+.login-footer{text-align:center;font-size:11px;font-family:var(--mono);color:#94a3b8;margin-top:20px;}
+.login-footer a{color:#2563eb;text-decoration:none;}
+.login-caps{
+  font-size:11px;color:#f59e0b;text-align:center;margin-top:8px;display:none;
+}
+.login-caps.show{display:block;}
+</style>
+<!-- CodeMirror 5 (稳定版，完整 mode 支持) -->
+<link  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+<!-- modes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/shell/shell.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/markdown/markdown.min.js"></script>
+<!-- theme -->
+<link  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/theme/idea.min.css">
+<!-- addons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldgutter.min.js"></script>
+<link  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldgutter.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/indent-fold.min.js"></script>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ────────────────────────────────────────────── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">IMC</div>
+    <div class="login-title">IMC 工作台</div>
+    <div class="login-sub">INTERNAL MANAGEMENT CONSOLE</div>
+    <label class="login-label" for="loginPass">访问密码</label>
+    <input class="login-input" id="loginPass" type="password" placeholder="请输入访问密码…" autocomplete="current-password">
+    <div class="login-caps" id="loginCaps">⚠️ 大写锁定已开启</div>
+    <button class="login-btn" id="loginBtn">进入工作台 →</button>
+    <div class="login-error" id="loginError">❌ 密码错误，请重试</div>
+    <div class="login-footer">© IMC Workbench v3.0 · <a href="#">内部系统</a></div>
+  </div>
+</div>
+
+
+<!-- ── TOP BAR ──────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-badge">IMC</div>
+    <div><div class="brand-name">工作台</div><div class="brand-sub">WORKBENCH v3.0</div></div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="nav"><span>🔗</span> 系统导航</div>
+    <div class="nav-tab" data-tab="doc"><span>📄</span> 文档管理</div>
+    <div class="nav-tab" data-tab="ora"><span>🏛️</span> Oracle 工作台</div>
+  </div>
+  <div class="topbar-right" style="gap:12px;">
+    <div id="syncStatus" style="font-size:12px;font-family:var(--mono);color:var(--muted);transition:color .3s;white-space:nowrap;">☁️ Google</div>
+    <div class="clock-box">
+      <div class="clock-time" id="clockTime">00:00:00</div>
+      <div class="clock-date" id="clockDate">—</div>
+      <div class="clock-lunar" id="clockLunar">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ────────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- NAV -->
+  <div class="tab-panel active" id="panel-nav">
+    <div class="nav-inner">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="s-ico">🔍</span>
+          <input type="text" id="navSearch" placeholder="搜索系统名称或地址…" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="addCardBtn">＋ 添加系统</button>
+      </div>
+      <div class="filters" id="filtersBar">
+        <button class="fbtn active" data-filter="all">全部</button>
+        <button class="fbtn" data-filter="monitor">监控</button>
+        <button class="fbtn" data-filter="devops">开发运维</button>
+        <button class="fbtn" data-filter="db">数据库</button>
+        <button class="fbtn" data-filter="biz">业务系统</button>
+        <button class="fbtn" data-filter="collab">协作</button>
+        <button class="fbtn" data-filter="infra">基础设施</button>
+        <button class="fbtn" data-filter="net">网络</button>
+        <button class="fbtn" data-filter="ext">外部</button>
+      </div>
+      <div id="navContent"></div>
+      <div class="empty" id="navEmpty">🔍 未找到匹配的系统</div>
+    </div>
+  </div>
+
+  <!-- DOC -->
+  <div class="tab-panel" id="panel-doc">
+    <div class="doc-layout">
+      <div class="doc-sidebar">
+        <div class="sb-hd">
+          <div class="sb-title">// DOCUMENTS</div>
+          <div class="sb-add" id="newDocBtn">＋</div>
+        </div>
+        <div class="sb-search"><input type="text" id="docSearch" placeholder="搜索文档…"></div>
+        <div class="doc-list" id="docList"></div>
+      </div>
+      <div class="doc-editor">
+        <div class="no-doc" id="noDoc">
+          <div class="no-doc-ico">📝</div>
+          <div class="no-doc-txt">选择左侧文档开始编辑<br>或新建一份文档</div>
+          <button class="no-doc-btn" id="noDocNew">＋ 新建文档</button>
+        </div>
+        <div id="editorWrap" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+          <div class="ed-bar">
+            <input class="ed-title" id="edTitle" type="text" placeholder="文档标题…">
+            <select class="type-sel" id="edType">
+              <option value="text">📝 Text</option><option value="sql">🗄️ SQL</option>
+              <option value="shell">🖥️ Shell</option><option value="python">🐍 Python</option>
+              <option value="json">📦 JSON</option><option value="yaml">⚙️ YAML</option>
+              <option value="markdown">✏️ Markdown</option><option value="js">⚡ JavaScript</option>
+              <option value="xml">🔖 XML</option>
+            </select>
+            <button class="ed-save" id="edSave">💾 保存</button>
+            <button class="ed-del" id="edDel">🗑️</button>
+          </div>
+          <div class="ed-meta">
+            <div class="mi">创建: <span id="mCreated">—</span></div>
+            <div class="mi">修改: <span id="mUpdated">—</span></div>
+            <div class="mi">字符: <span id="mChars">0</span></div>
+            <div class="mi">行数: <span id="mLines">0</span></div>
+          </div>
+          <div class="ed-body"><div id="edContent"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORACLE -->
+  <div class="tab-panel" id="panel-ora">
+    <div class="ora-layout">
+      <!-- Connection Bar -->
+      <div class="ora-conn-bar">
+        <span class="conn-label">连接</span>
+        <input class="conn-input w-host" id="oraHost" type="text" placeholder="主机 host" value="192.168.8.89">
+        <span class="conn-sep">:</span>
+        <input class="conn-input w-port" id="oraPort" type="text" placeholder="端口" value="1521">
+        <span class="conn-sep">/</span>
+        <input class="conn-input w-sid" id="oraSid" type="text" placeholder="SID/服务名" value="ORCL">
+        <span class="conn-sep">|</span>
+        <input class="conn-input w-user" id="oraUser" type="text" placeholder="用户名" value="system">
+        <input class="conn-input w-pass" id="oraPass" type="password" placeholder="密码">
+        <button class="btn btn-primary" id="oraConnBtn" style="min-width:80px;">🔌 连接</button>
+        <button class="btn" id="oraDiscBtn" style="display:none;">断开</button>
+        <div class="conn-status">
+          <div class="status-dot" id="statusDot"></div>
+          <span class="status-txt" id="statusTxt">未连接</span>
+        </div>
+      </div>
+
+      <div class="ora-body">
+        <!-- SQL History Sidebar -->
+        <div class="ora-sidebar">
+          <div class="ora-sb-hd">
+            <div class="ora-sb-title">// SQL 历史</div>
+            <div class="sb-add" id="newSqlBtn" title="新建SQL">＋</div>
+          </div>
+          <div class="sql-hist-list" id="sqlHistList"></div>
+        </div>
+
+        <!-- Editor + Results -->
+        <div class="ora-main">
+          <div class="ora-editor-area">
+            <div class="ora-editor-bar">
+              <div class="ora-editor-bar-left">
+                <input class="sql-name-input" id="sqlName" type="text" placeholder="SQL 名称…" value="新建查询">
+              </div>
+              <button class="btn-save-sql" id="saveSqlBtn" title="保存到历史">💾 保存</button>
+              <button class="btn-format" id="fmtSqlBtn" title="格式化SQL">🔧 格式化</button>
+              <button class="btn-explain" id="explainBtn">📋 执行计划</button>
+              <button class="btn-clear-sql" id="clearSqlBtn">🗑️ 清空</button>
+              <button class="btn-run" id="runBtn">
+                <span class="btn-run-icon">▶</span> 执行
+              </button>
+            </div>
+            <div class="ora-sql-editor">
+              <div class="line-nums" id="lineNums">1</div>
+              <textarea class="sql-textarea" id="sqlEditor" spellcheck="false"
+                placeholder="-- 在此输入 SQL 语句&#10;-- 支持 SELECT / INSERT / UPDATE / DELETE / DDL&#10;-- Ctrl+Enter 快速执行&#10;&#10;SELECT * FROM dual;">SELECT sysdate, user FROM dual;</textarea>
+            </div>
+          </div>
+          <div class="ora-results">
+            <div class="results-bar">
+              <div class="results-tabs">
+                <div class="res-tab active" data-rtab="data">📊 数据</div>
+                <div class="res-tab" data-rtab="msg">📋 消息</div>
+                <div class="res-tab" data-rtab="explain">🔍 执行计划</div>
+              </div>
+              <div class="results-meta" id="resultsMeta"></div>
+              <button class="btn-export" id="exportBtn" style="display:none;">⬇ 导出 CSV</button>
+            </div>
+            <div class="results-panel" id="resultsPanel">
+              <div class="result-placeholder">
+                <div class="result-placeholder-ico">🏛️</div>
+                <div>配置连接信息后执行 SQL</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Card -->
+<div class="overlay" id="cardModal">
+  <div class="modal">
+    <h3>🔗 <span id="modalTitle">添加系统</span></h3>
+    <div class="form-row"><label>系统名称</label><input id="fName" type="text" placeholder="例：My System"></div>
+    <div class="form-row"><label>链接地址</label><input id="fUrl" type="text" placeholder="https://…"></div>
+    <div class="form-row"><label>分类</label>
+      <select id="fCat">
+        <option value="monitor">📊 监控</option><option value="devops">🛠️ 开发运维</option>
+        <option value="db">🗄️ 数据库</option><option value="biz">🏢 业务系统</option>
+        <option value="collab">🤝 协作</option><option value="infra">⚙️ 基础设施</option>
+        <option value="net">🌐 网络</option><option value="ext">🔗 外部</option>
+      </select>
+    </div>
+    <div class="form-row"><label>图标</label><div class="icon-grid" id="iconGrid"></div></div>
+    <div class="form-row"><label>颜色</label><div class="color-grid" id="colorGrid"></div></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="mCancel">取消</button>
+      <button class="btn-ok" id="mOk">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   LUNAR CALENDAR
+════════════════════════════════════════════════════════════════ */
+const LUNAR_INFO=[0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
+0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
+0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
+0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
+0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
+0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052d0,0x0a9a8,0x0e950,0x06aa0,
+0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
+0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,
+0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
+0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06aa0,0x0a6b6,0x056a0,0x02b40,0x0d9e4,
+0x0d4d0,0x0c950,0x0d4a4,0x0b550,0x0056a,0x1a5b3,0x025d0,0x092d0,0x0d2b3,0x0a950,
+0x0b557,0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052d0,0x0a9a8,0x0e950,
+0x06aa0,0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,
+0x056a0,0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,
+0x195a6,0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60];
+const LUNAR_MONTH=['正','二','三','四','五','六','七','八','九','十','冬','腊'];
+const LUNAR_DAY=['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+  '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+  '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+const TIAN=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const DI=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const ZODIAC=['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+const JIEQI=['小寒','大寒','立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至','小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至'];
+
+function getLunarDate(y,m,d){
+  const baseDate=new Date(1900,0,31);
+  const objDate=new Date(y,m-1,d);
+  let offset=Math.round((objDate-baseDate)/86400000);
+  let lunarYear=1900,lunarMonth,lunarDay,leap=false;
+  for(let i=1900;i<2100&&offset>0;i++){
+    const daysOfYear=lunarDaysOfYear(i);
+    offset-=daysOfYear;lunarYear=i;
+  }
+  if(offset<0){offset+=lunarDaysOfYear(lunarYear);lunarYear--;}
+  const leapMonth=leapMonthOfYear(lunarYear);
+  const isLeap=leapMonth>0&&leapDaysOfYear(lunarYear)>0;
+  for(let i=1;i<13&&offset>0;i++){
+    let daysOfMonth;
+    if(isLeap&&i===(leapMonth+1)&&!leap){leap=true;i--;daysOfMonth=leapDaysOfYear(lunarYear);}
+    else{daysOfMonth=lunarDaysOfMonth(lunarYear,i);leap=false;}
+    offset-=daysOfMonth;lunarMonth=i;
+    if(leap)lunarMonth='leap'+i;
+  }
+  if(offset===0&&leapMonth>0&&leapMonth===lunarMonth){
+    if(leap){leap=false;}else{leap=true;lunarMonth='leap'+lunarMonth;}
+  }
+  if(offset<0){offset+=lunarDaysOfMonth(lunarYear,typeof lunarMonth==='string'?parseInt(lunarMonth.replace('leap','')):lunarMonth);lunarMonth=typeof lunarMonth==='string'?parseInt(lunarMonth.replace('leap','')):lunarMonth-1;}
+  lunarDay=offset+1;
+  const lm=typeof lunarMonth==='string'?parseInt(lunarMonth.replace('leap','')):lunarMonth;
+  const tianIdx=(lunarYear-4)%10;const diIdx=(lunarYear-4)%12;
+  return{year:lunarYear,month:lm,day:lunarDay,leap,tian:TIAN[tianIdx<0?tianIdx+10:tianIdx],di:DI[diIdx<0?diIdx+12:diIdx],zodiac:ZODIAC[diIdx<0?diIdx+12:diIdx]};
+}
+function lunarDaysOfYear(y){let s=348;for(let i=0x8000;i>0x8;i>>=1)s+=(LUNAR_INFO[y-1900]&i)?1:0;return s+leapDaysOfYear(y);}
+function leapDaysOfYear(y){if(leapMonthOfYear(y)){return(LUNAR_INFO[y-1900]&0xf)?30:29;}return 0;}
+function leapMonthOfYear(y){return LUNAR_INFO[y-1900]&0xf;}
+function lunarDaysOfMonth(y,m){return(LUNAR_INFO[y-1900]&(0x10000>>m))?30:29;}
+
+function formatLunar(d){
+  try{
+    const l=getLunarDate(d.getFullYear(),d.getMonth()+1,d.getDate());
+    return`${l.tian}${l.di}年(${l.zodiac}) ${l.leap?'闰':''}${LUNAR_MONTH[l.month-1]}月${LUNAR_DAY[l.day-1]}`;
+  }catch{return'';}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CLOCK
+════════════════════════════════════════════════════════════════ */
+const WEEKDAYS=['周日','周一','周二','周三','周四','周五','周六'];
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clockTime').textContent=now.toLocaleTimeString('zh-CN',{hour12:false});
+  document.getElementById('clockDate').textContent=
+    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${WEEKDAYS[now.getDay()]}`;
+  document.getElementById('clockLunar').textContent=formatLunar(now);
+}
+updateClock();setInterval(updateClock,1000);
+
+/* ════════════════════════════════════════════════════════════════
+   TABS
+════════════════════════════════════════════════════════════════ */
+document.querySelectorAll('.nav-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-tab,.tab-panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════
+   CONFIG DATA
+════════════════════════════════════════════════════════════════ */
+const CAT={
+  monitor:{label:'监控 / Monitoring',tag:'ct-monitor',lbl:'Monitor'},
+  devops:{label:'开发运维 / DevOps',tag:'ct-devops',lbl:'DevOps'},
+  db:{label:'数据库 / Database',tag:'ct-db',lbl:'Database'},
+  biz:{label:'业务系统 / Business',tag:'ct-biz',lbl:'Business'},
+  collab:{label:'协作 / Collaboration',tag:'ct-collab',lbl:'Collab'},
+  infra:{label:'基础设施 / Infrastructure',tag:'ct-infra',lbl:'Infra'},
+  net:{label:'网络 / Network',tag:'ct-net',lbl:'Network'},
+  ext:{label:'外部 / External',tag:'ct-ext',lbl:'External'},
+};
+const ICONS=['🏛️','📊','📈','🖥️','🔎','🎯','📚','🐬','🗄️','🐇','⚙️','🏢','✉️','🌐','🔴','⚡','🔧','🛡️','📡','🔒','🚀','💡','🔬','🧩','📦','🗂️','🔑','🌍','💾','🎛️'];
+const COLORS=[
+  {n:'c-blue',d:'#2563eb'},{n:'c-cyan',d:'#0891b2'},{n:'c-purple',d:'#7c3aed'},{n:'c-green',d:'#059669'},
+  {n:'c-orange',d:'#d97706'},{n:'c-pink',d:'#db2777'},{n:'c-red',d:'#dc2626'},{n:'c-teal',d:'#0d9488'},
+];
+const DOC_ICONS={text:'📝',sql:'🗄️',shell:'🖥️',python:'🐍',json:'📦',yaml:'⚙️',markdown:'✏️',js:'⚡',xml:'🔖'};
+const PLACEHOLDERS={
+  sql:`-- SQL 查询示例\nSELECT * FROM table_name WHERE rownum <= 100;`,
+  shell:`#!/bin/bash\nset -euo pipefail\necho "Hello IMC"`,
+  python:`#!/usr/bin/env python3\nprint("Hello IMC")`,
+  json:`{\n  "name": "IMC",\n  "version": "1.0.0"\n}`,
+  yaml:`app:\n  name: imc\n  version: 1.0.0`,
+  markdown:`# 标题\n\n## 概述\n\n内容...`,
+  js:`'use strict';\nconsole.log('Hello IMC');`,
+  xml:`<?xml version="1.0" encoding="UTF-8"?>\n<root>\n</root>`,
+  text:'',
+};
+const DEFAULT_LINKS=[
+  {id:'l1',name:'Oracle EMCC 24ai',url:'https://192.168.8.89:7803/em/faces/logon/core-uifwk-console-login',cat:'db',icon:'🏛️',color:'c-orange'},
+  {id:'l2',name:'Grafana 数据库',url:'http://192.168.9.39:3000/login',cat:'monitor',icon:'📊',color:'c-cyan'},
+  {id:'l3',name:'Grafana 金蝶',url:'http://192.168.6.26:3000',cat:'monitor',icon:'📈',color:'c-teal'},
+  {id:'l4',name:'Zabbix',url:'http://192.168.9.100/zabbix/zabbix.php?action=dashboard.view',cat:'monitor',icon:'🖥️',color:'c-green'},
+  {id:'l5',name:'Kibana / ES',url:'http://kibana.imcxa.com/login',cat:'monitor',icon:'🔎',color:'c-blue'},
+  {id:'l6',name:'Jira',url:'https://jira.imcxa.com/login.jsp',cat:'devops',icon:'🎯',color:'c-blue'},
+  {id:'l7',name:'Wiki',url:'https://wiki.imcxa.com/login.action',cat:'devops',icon:'📚',color:'c-purple'},
+  {id:'l8',name:'DolphinScheduler',url:'http://192.168.9.122:12345/dolphinscheduler/ui/login',cat:'devops',icon:'🐬',color:'c-cyan'},
+  {id:'l9',name:'DORIS',url:'http://192.168.8.107:8030/login',cat:'db',icon:'🗄️',color:'c-orange'},
+  {id:'l10',name:'RabbitMQ',url:'http://rabbitmq.imcxa.com/',cat:'infra',icon:'🐇',color:'c-orange'},
+  {id:'l11',name:'运维控制系统',url:'http://192.168.9.85/logout',cat:'infra',icon:'⚙️',color:'c-purple'},
+  {id:'l12',name:'OA 系统',url:'https://oauth.imctop.com/Account/Login',cat:'biz',icon:'🏢',color:'c-blue'},
+  {id:'l13',name:'企业 QQ 邮箱',url:'https://exmail.qq.com/cgi-bin/loginpage',cat:'collab',icon:'✉️',color:'c-pink'},
+  {id:'l14',name:'上网登录',url:'http://1.1.1.3',cat:'net',icon:'🌐',color:'c-teal'},
+  {id:'l15',name:'Oracle 官网',url:'https://www.oracle.com/',cat:'ext',icon:'🔴',color:'c-red'},
+];
+
+/* ════════════════════════════════════════════════════════════════
+   GOOGLE APPS SCRIPT 存储层
+════════════════════════════════════════════════════════════════ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxK7q4tzVZV_2H_SuS0FyUXK8vtjTDsMS5fKvjGmlhn1Zb_osY1Dto9-PM8x5BA04xh/exec';
+
+// 同步状态指示
+let syncStatus = 'idle'; // idle | syncing | ok | error
+function setSyncStatus(s, msg='') {
+  syncStatus = s;
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const icons = {idle:'☁️', syncing:'🔄', ok:'✅', error:'❌'};
+  const colors = {idle:'var(--muted)', syncing:'var(--orange)', ok:'var(--green)', error:'var(--red)'};
+  el.textContent = icons[s] + (msg ? ' ' + msg : '');
+  el.style.color = colors[s];
+  if (s === 'syncing') el.style.animation = 'spin .8s linear infinite';
+  else el.style.animation = '';
+}
+
+// GET 请求（读取）
+async function gasGet(action, sheet) {
+  const url = `${GAS_URL}?action=${action}&sheet=${sheet}&t=${Date.now()}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'GAS error');
+  return json.data || json;
+}
+
+// POST 请求（写入）
+async function gasPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'GAS error');
+  return json.data || json;
+}
+
+// ── 文档云同步 ───────────────────────────────────────────────
+async function cloudSaveDoc(doc) {
+  setSyncStatus('syncing');
+  try {
+    await gasPost({ action: 'upsert', sheet: 'documents', record: doc });
+    setSyncStatus('ok', '已同步');
+    setTimeout(() => setSyncStatus('idle'), 2000);
+  } catch(e) {
+    setSyncStatus('error', '同步失败');
+    console.error('cloudSaveDoc:', e);
+  }
+}
+async function cloudDeleteDoc(id) {
+  setSyncStatus('syncing');
+  try {
+    await gasPost({ action: 'delete', sheet: 'documents', id });
+    setSyncStatus('ok', '已同步');
+    setTimeout(() => setSyncStatus('idle'), 2000);
+  } catch(e) { setSyncStatus('error', '同步失败'); }
+}
+async function cloudLoadDocs() {
+  setSyncStatus('syncing');
+  try {
+    const rows = await gasGet('getAll', 'documents');
+    setSyncStatus('ok', '已加载');
+    setTimeout(() => setSyncStatus('idle'), 2000);
+    return rows.map(r => ({
+      id: r.id, title: r.title, type: r.type, content: r.content,
+      createdAt: Number(r.createdAt) || Date.now(),
+      updatedAt: Number(r.updatedAt) || Date.now(),
+    }));
+  } catch(e) {
+    setSyncStatus('error', '加载失败，使用本地缓存');
+    console.error('cloudLoadDocs:', e);
+    return null;
+  }
+}
+
+// ── 链接云同步 ───────────────────────────────────────────────
+async function cloudSaveLink(link) {
+  try { await gasPost({ action: 'upsert', sheet: 'links', record: link }); } catch(e) { console.error(e); }
+}
+async function cloudDeleteLink(id) {
+  try { await gasPost({ action: 'delete', sheet: 'links', id }); } catch(e) { console.error(e); }
+}
+async function cloudLoadLinks() {
+  try {
+    const rows = await gasGet('getAll', 'links');
+    return rows.length ? rows : null;
+  } catch(e) { return null; }
+}
+
+// ── SQL历史云同步 ────────────────────────────────────────────
+async function cloudSaveSql(s) {
+  try { await gasPost({ action: 'upsert', sheet: 'sql_history', record: s }); } catch(e) { console.error(e); }
+}
+async function cloudDeleteSql(id) {
+  try { await gasPost({ action: 'delete', sheet: 'sql_history', id }); } catch(e) { console.error(e); }
+}
+async function cloudLoadSql() {
+  try {
+    const rows = await gasGet('getAll', 'sql_history');
+    return rows.map(r => ({
+      id: r.id, name: r.name, sql: r.sql,
+      createdAt: Number(r.createdAt)||Date.now(),
+      updatedAt: Number(r.updatedAt)||Date.now(),
+    }));
+  } catch(e) { return null; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   LOCAL CACHE (localStorage 作为离线缓存)
+════════════════════════════════════════════════════════════════ */
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function fmtDate(ts){if(!ts)return'—';const d=new Date(ts);return d.toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})+' '+d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
+function shortUrl(url){try{const u=new URL(url);return u.hostname+(u.port?':'+u.port:'')+(u.pathname.length>1?u.pathname.slice(0,16)+'…':'');}catch{return url.slice(0,30);}}
+
+let links=lsGet('imc_links',JSON.parse(JSON.stringify(DEFAULT_LINKS)));
+let docs=lsGet('imc_docs',[]);
+let sqlHistory=lsGet('imc_sql_hist',[]);
+let activeDocId=null,editCardId=null,selIcon=ICONS[0],selColor=COLORS[0].n;
+let activeSqlId=null,saveTimer=null,curFilter='all';
+
+/* ════════════════════════════════════════════════════════════════
+   NAV
+════════════════════════════════════════════════════════════════ */
+function renderNav(){
+  const q=document.getElementById('navSearch').value.toLowerCase().trim();
+  const container=document.getElementById('navContent');container.innerHTML='';
+  let total=0;
+  Object.keys(CAT).forEach(cat=>{
+    if(curFilter!=='all'&&curFilter!==cat)return;
+    const items=links.filter(l=>l.cat===cat&&(!q||l.name.toLowerCase().includes(q)||l.url.toLowerCase().includes(q)));
+    if(!items.length)return;total+=items.length;
+    const sec=document.createElement('div');sec.className='section';
+    sec.innerHTML=`<div class="section-hd"><span class="section-lbl">${CAT[cat].label}</span><div class="section-hr"></div><span class="section-ct">${items.length} 个</span></div><div class="grid"></div>`;
+    container.appendChild(sec);
+    const grid=sec.querySelector('.grid');
+    items.forEach((item,i)=>{
+      const ico=item.color.replace('c-','');
+      const a=document.createElement('a');a.className='card';a.href=item.url;a.target='_blank';
+      a.style.animationDelay=i*40+'ms';
+      a.innerHTML=`<div class="card-top"><div class="card-ico ci-${ico}">${item.icon}</div><div class="card-acts"><div class="cact edit" data-id="${item.id}">✏️</div><div class="cact del" data-id="${item.id}">🗑️</div></div></div><div class="card-name">${item.name}</div><div class="card-url">${shortUrl(item.url)}</div><span class="card-tag ${CAT[cat].tag}">${CAT[cat].lbl}</span>`;
+      a.querySelectorAll('.cact').forEach(b=>b.addEventListener('click',e=>{
+        e.preventDefault();e.stopPropagation();
+        b.classList.contains('edit')?openModal(b.dataset.id):delCard(b.dataset.id);
+      }));
+      grid.appendChild(a);
+    });
+  });
+  document.getElementById('navEmpty').classList.toggle('show',!total);
+}
+function delCard(id){if(!confirm('确认删除？'))return;links=links.filter(l=>l.id!==id);lsSet('imc_links',links);renderNav();cloudDeleteLink(id);}
+document.getElementById('navSearch').addEventListener('input',renderNav);
+document.getElementById('filtersBar').addEventListener('click',e=>{
+  const b=e.target.closest('.fbtn');if(!b)return;
+  document.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');curFilter=b.dataset.filter;renderNav();
+});
+document.getElementById('addCardBtn').addEventListener('click',()=>openModal(null));
+
+/* Modal */
+const ig=document.getElementById('iconGrid');
+ICONS.forEach(ic=>{const d=document.createElement('div');d.className='icon-opt';d.textContent=ic;d.addEventListener('click',()=>{selIcon=ic;ig.querySelectorAll('.icon-opt').forEach(x=>x.classList.toggle('sel',x===d));});ig.appendChild(d);});
+const cg=document.getElementById('colorGrid');
+COLORS.forEach(c=>{const d=document.createElement('div');d.className='color-dot';d.style.background=c.d;d.dataset.n=c.n;d.addEventListener('click',()=>{selColor=c.n;cg.querySelectorAll('.color-dot').forEach(x=>x.classList.toggle('sel',x===d));});cg.appendChild(d);});
+function openModal(id){
+  editCardId=id;document.getElementById('modalTitle').textContent=id?'编辑系统':'添加系统';
+  const item=id?links.find(l=>l.id===id):null;
+  document.getElementById('fName').value=item?.name||'';document.getElementById('fUrl').value=item?.url||'';document.getElementById('fCat').value=item?.cat||'monitor';
+  selIcon=item?.icon||ICONS[0];selColor=item?.color||COLORS[0].n;
+  ig.querySelectorAll('.icon-opt').forEach(x=>x.classList.toggle('sel',x.textContent===selIcon));
+  cg.querySelectorAll('.color-dot').forEach(x=>x.classList.toggle('sel',x.dataset.n===selColor));
+  document.getElementById('cardModal').classList.add('show');setTimeout(()=>document.getElementById('fName').focus(),80);
+}
+document.getElementById('mCancel').addEventListener('click',()=>document.getElementById('cardModal').classList.remove('show'));
+document.getElementById('cardModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+document.getElementById('mOk').addEventListener('click',()=>{
+  const name=document.getElementById('fName').value.trim(),url=document.getElementById('fUrl').value.trim();
+  if(!name||!url){alert('请填写名称和链接');return;}
+  const cat=document.getElementById('fCat').value;
+  if(editCardId){const i=links.find(l=>l.id===editCardId);if(i)Object.assign(i,{name,url,cat,icon:selIcon,color:selColor});}
+  else links.push({id:'l'+uid(),name,url,cat,icon:selIcon,color:selColor});
+  lsSet('imc_links',links);document.getElementById('cardModal').classList.remove('show');renderNav();
+  cloudSaveLink(editCardId?links.find(l=>l.id===editCardId):links[links.length-1]);
+});
+
+/* ════════════════════════════════════════════════════════════════
+   DOCS
+════════════════════════════════════════════════════════════════ */
+function renderDocList(){
+  const q=document.getElementById('docSearch').value.toLowerCase();
+  const list=document.getElementById('docList');list.innerHTML='';
+  const filtered=docs.filter(d=>!q||d.title.toLowerCase().includes(q));
+  if(!filtered.length){list.innerHTML=`<div class="doc-empty">${q?'🔍 无匹配文档':'📄 暂无文档，点击 ＋ 新建'}</div>`;return;}
+  [...filtered].sort((a,b)=>b.updatedAt-a.updatedAt).forEach(doc=>{
+    const el=document.createElement('div');el.className='doc-item'+(doc.id===activeDocId?' active':'');
+    el.innerHTML=`<div class="di-icon">${DOC_ICONS[doc.type]||'📄'}</div><div class="di-info"><div class="di-name">${doc.title||'无标题'}</div><div class="di-meta">${doc.type.toUpperCase()} · ${fmtDate(doc.updatedAt)}</div></div><div class="di-del" data-id="${doc.id}">✕</div>`;
+    el.addEventListener('click',e=>{if(e.target.classList.contains('di-del'))return;openDoc(doc.id);});
+    el.querySelector('.di-del').addEventListener('click',e=>{e.stopPropagation();delDoc(doc.id);});
+    list.appendChild(el);
+  });
+}
+function openDoc(id){
+  activeDocId=id;const doc=docs.find(d=>d.id===id);if(!doc)return;
+  document.getElementById('noDoc').style.display='none';
+  const ew=document.getElementById('editorWrap');ew.style.display='flex';ew.style.flexDirection='column';
+  document.getElementById('edTitle').value=doc.title;document.getElementById('edType').value=doc.type;
+  initDocCM(); setDocContent(doc.content); setDocCMMode(doc.type);
+  document.getElementById('mCreated').textContent=fmtDate(doc.createdAt);document.getElementById('mUpdated').textContent=fmtDate(doc.updatedAt);
+  updateStats(doc.content);renderDocList();
+}
+function updateStats(v){document.getElementById('mChars').textContent=v.length;document.getElementById('mLines').textContent=v.split('\n').length;}
+
+// ── CodeMirror 实例（文档编辑器）──────────────────────────────
+let docCM = null;
+
+const CM_MODE = {
+  text:     '',
+  sql:      'text/x-sql',
+  shell:    'text/x-sh',
+  python:   'text/x-python',
+  json:     'application/json',
+  yaml:     'text/x-yaml',
+  markdown: 'text/x-markdown',
+  js:       'text/javascript',
+  xml:      'application/xml',
+};
+
+function initDocCM() {
+  if (docCM) return; // 已初始化
+  const el = document.getElementById('edContent');
+  docCM = CodeMirror(el, {
+    value: '',
+    mode: '',
+    theme: 'idea',
+    lineNumbers: true,
+    lineWrapping: false,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    indentUnit: 2,
+    tabSize: 2,
+    indentWithTabs: false,
+    foldGutter: true,
+    gutters: ['CodeMirror-linenumbers','CodeMirror-foldgutter'],
+    extraKeys: {
+      'Tab': cm => cm.execCommand('indentMore'),
+      'Shift-Tab': cm => cm.execCommand('indentLess'),
+      'Ctrl-/': cm => cm.execCommand('toggleComment'),
+      'Cmd-/':  cm => cm.execCommand('toggleComment'),
+      'Ctrl-S': () => saveDoc(),
+      'Cmd-S':  () => saveDoc(),
+    },
+  });
+  docCM.on('change', () => {
+    updateStats(docCM.getValue());
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDoc, 800);
+  });
+}
+
+function setDocCMMode(type) {
+  if (!docCM) return;
+  docCM.setOption('mode', CM_MODE[type] || '');
+}
+
+function getDocContent() {
+  return docCM ? docCM.getValue() : '';
+}
+
+function setDocContent(val) {
+  if (!docCM) return;
+  docCM.setValue(val || '');
+  docCM.clearHistory();
+  setTimeout(() => docCM.refresh(), 10);
+}
+function newDoc(){
+  const doc={id:uid(),title:'新文档',type:'text',content:'',createdAt:Date.now(),updatedAt:Date.now()};
+  docs.unshift(doc);lsSet('imc_docs',docs);renderDocList();openDoc(doc.id);
+  setTimeout(()=>{const t=document.getElementById('edTitle');t.focus();t.select();},60);
+}
+function saveDoc(){
+  const doc=docs.find(d=>d.id===activeDocId);if(!doc)return;
+  doc.title=document.getElementById('edTitle').value.trim()||'无标题';
+  doc.type=document.getElementById('edType').value;doc.content=getDocContent();
+  doc.updatedAt=Date.now();lsSet('imc_docs',docs);
+  document.getElementById('mUpdated').textContent=fmtDate(doc.updatedAt);
+  const btn=document.getElementById('edSave');btn.classList.add('saved');btn.textContent='✅ 已保存';
+  setTimeout(()=>{btn.classList.remove('saved');btn.textContent='💾 保存';},1500);
+  renderDocList();
+  cloudSaveDoc(doc); // ← 同步到 Google Sheets
+}
+function delDoc(id){if(!confirm('确认删除？'))return;docs=docs.filter(d=>d.id!==id);lsSet('imc_docs',docs);if(activeDocId===id){activeDocId=null;document.getElementById('noDoc').style.display='';document.getElementById('editorWrap').style.display='none';}renderDocList();cloudDeleteDoc(id);// ← 同步到 Google Sheets
+}
+document.getElementById('newDocBtn').addEventListener('click',newDoc);
+document.getElementById('noDocNew').addEventListener('click',newDoc);
+document.getElementById('docSearch').addEventListener('input',renderDocList);
+document.getElementById('edSave').addEventListener('click',saveDoc);
+document.getElementById('edDel').addEventListener('click',()=>{if(activeDocId)delDoc(activeDocId);});
+document.getElementById('edType').addEventListener('change',function(){
+  const doc=docs.find(d=>d.id===activeDocId);
+  if(doc&&!doc.content&&PLACEHOLDERS[this.value]){setDocContent(PLACEHOLDERS[this.value]);updateStats(getDocContent());}  setDocCMMode(this.value);
+  clearTimeout(saveTimer);saveTimer=setTimeout(saveDoc,600);
+});
+// edContent input 由 CodeMirror onChange 接管
+document.getElementById('edTitle').addEventListener('input',function(){clearTimeout(saveTimer);saveTimer=setTimeout(saveDoc,800);});
+// edContent keydown 由 CodeMirror extraKeys 接管
+
+/* ════════════════════════════════════════════════════════════════
+   ORACLE WORKBENCH
+   NOTE: Real Oracle connections require a backend proxy (CORS).
+   This workbench simulates the full UX and provides the correct
+   API call pattern for a Node.js / Python backend proxy.
+════════════════════════════════════════════════════════════════ */
+let oraConnected=false;
+let currentResultData=null;
+let activeResTab='data';
+
+// Connection
+document.getElementById('oraConnBtn').addEventListener('click',()=>oraConnect());
+document.getElementById('oraDiscBtn').addEventListener('click',()=>oraDisconnect());
+
+function setStatus(state,msg){
+  const dot=document.getElementById('statusDot');
+  const txt=document.getElementById('statusTxt');
+  dot.className='status-dot '+state;txt.textContent=msg;
+}
+
+async function oraConnect(){
+  const host=document.getElementById('oraHost').value.trim();
+  const port=document.getElementById('oraPort').value.trim();
+  const sid=document.getElementById('oraSid').value.trim();
+  const user=document.getElementById('oraUser').value.trim();
+  const pass=document.getElementById('oraPass').value;
+  if(!host||!port||!sid||!user){appendMsg('error','❌ 错误：请填写完整的连接信息（主机、端口、SID、用户名）');return;}
+  setStatus('connecting','连接中…');
+  document.getElementById('oraConnBtn').disabled=true;
+  appendMsg('info',`[${new Date().toLocaleTimeString()}] 正在连接 ${user}@${host}:${port}/${sid} …`);
+
+  // 模拟连接（实际需要后端代理）
+  // 后端接口示例：POST /api/oracle/connect  body:{host,port,sid,user,pass}
+  await sleep(1200);
+
+  // 演示模式：模拟连接成功
+  oraConnected=true;
+  setStatus('ok',`已连接 ${user}@${host}/${sid}`);
+  document.getElementById('oraConnBtn').style.display='none';
+  document.getElementById('oraDiscBtn').style.display='';
+  appendMsg('ok',`[${new Date().toLocaleTimeString()}] ✅ 连接成功！Oracle Database`);
+  appendMsg('info',`会话信息：用户=${user.toUpperCase()}  字符集=AL32UTF8  NLS日期格式=DD-MON-RR`);
+}
+
+function oraDisconnect(){
+  oraConnected=false;
+  setStatus('','已断开');
+  document.getElementById('oraConnBtn').style.display='';document.getElementById('oraConnBtn').disabled=false;
+  document.getElementById('oraDiscBtn').style.display='none';
+  appendMsg('warn',`[${new Date().toLocaleTimeString()}] 🔌 连接已断开`);
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// SQL Editor line numbers
+const sqlEditor=document.getElementById('sqlEditor');
+const lineNums=document.getElementById('lineNums');
+function updateLineNums(){
+  const lines=sqlEditor.value.split('\n').length;
+  lineNums.innerHTML=Array.from({length:lines},(_,i)=>i+1).join('<br>');
+  lineNums.scrollTop=sqlEditor.scrollTop;
+}
+sqlEditor.addEventListener('input',updateLineNums);
+sqlEditor.addEventListener('scroll',()=>{lineNums.scrollTop=sqlEditor.scrollTop;});
+sqlEditor.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){e.preventDefault();const s=sqlEditor.selectionStart;sqlEditor.value=sqlEditor.value.slice(0,s)+'  '+sqlEditor.value.slice(sqlEditor.selectionEnd);sqlEditor.selectionStart=sqlEditor.selectionEnd=s+2;updateLineNums();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();runSql();}
+});
+updateLineNums();
+
+// Result tabs
+document.querySelectorAll('.res-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.res-tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');activeResTab=t.dataset.rtab;
+    if(activeResTab==='data')renderDataTab();
+    else if(activeResTab==='msg')renderMsgTab();
+    else if(activeResTab==='explain')renderExplainTab();
+  });
+});
+
+// Run SQL
+document.getElementById('runBtn').addEventListener('click',runSql);
+document.getElementById('explainBtn').addEventListener('click',()=>{runSql(true);});
+document.getElementById('clearSqlBtn').addEventListener('click',()=>{sqlEditor.value='';updateLineNums();});
+document.getElementById('fmtSqlBtn').addEventListener('click',formatSql);
+document.getElementById('saveSqlBtn').addEventListener('click',saveSqlToHist);
+document.getElementById('exportBtn').addEventListener('click',exportCsv);
+
+// Message store
+let msgLines=[];let explainData=null;
+
+function appendMsg(type,text){
+  msgLines.push({type,text});
+  if(activeResTab==='msg')renderMsgTab();
+}
+
+let lastQueryResult=null;
+
+async function runSql(explain=false){
+  const sql=sqlEditor.value.trim();
+  if(!sql){appendMsg('warn','⚠️  SQL 内容为空');return;}
+  if(!oraConnected){appendMsg('error','❌ 错误：尚未连接数据库，请先建立连接');return;}
+
+  const runBtn=document.getElementById('runBtn');
+  runBtn.disabled=true;runBtn.innerHTML='<span class="spinner"></span> 执行中…';
+  const t0=Date.now();
+  appendMsg('info',`\n[${new Date().toLocaleTimeString()}] ${explain?'获取执行计划':'执行'}: ${sql.slice(0,80)}${sql.length>80?'…':''}`);
+
+  await sleep(600+Math.random()*600);
+
+  const elapsed=((Date.now()-t0)/1000).toFixed(2);
+  runBtn.disabled=false;runBtn.innerHTML='<span class="btn-run-icon">▶</span> 执行';
+
+  // Detect SQL type
+  const s=sql.toUpperCase().trimStart();
+  if(explain){runExplain(sql,elapsed);return;}
+  if(s.startsWith('SELECT')||s.startsWith('WITH')){runSelect(sql,elapsed);}
+  else if(s.startsWith('INSERT')||s.startsWith('UPDATE')||s.startsWith('DELETE')||s.startsWith('MERGE')){runDML(sql,elapsed);}
+  else if(s.startsWith('CREATE')||s.startsWith('DROP')||s.startsWith('ALTER')||s.startsWith('TRUNCATE')){runDDL(sql,elapsed);}
+  else{runGeneric(sql,elapsed);}
+}
+
+function runSelect(sql,elapsed){
+  // Simulate realistic Oracle SELECT results
+  const mockTables={
+    dual:[{DUMMY:'X'}],
+    default:generateMockRows(sql),
+  };
+  const isDual=/FROM\s+DUAL/i.test(sql);
+  let rows;
+  if(isDual){
+    const cols={};
+    if(/SYSDATE/i.test(sql))cols['SYSDATE']=new Date().toLocaleDateString('zh-CN');
+    if(/USER/i.test(sql)&&!/USERNAME/i.test(sql))cols['USER']=document.getElementById('oraUser').value.toUpperCase();
+    if(/ROWNUM/i.test(sql))cols['ROWNUM']='1';
+    rows=Object.keys(cols).length?[cols]:[{DUMMY:'X'}];
+  } else {
+    rows=generateMockRows(sql);
+  }
+  lastQueryResult={rows};
+  const meta=document.getElementById('resultsMeta');
+  meta.textContent=`✅ ${rows.length} 行返回  ${elapsed}s`;meta.className='results-meta ok';
+  document.getElementById('exportBtn').style.display='';
+  appendMsg('ok',`✅ 查询成功，返回 ${rows.length} 行，耗时 ${elapsed}s`);
+  activeResTab='data';document.querySelectorAll('.res-tab').forEach(x=>x.classList.toggle('active',x.dataset.rtab==='data'));
+  renderDataTab();
+}
+
+function runDML(sql,elapsed){
+  lastQueryResult=null;document.getElementById('exportBtn').style.display='none';
+  const n=Math.floor(Math.random()*10)+1;
+  const meta=document.getElementById('resultsMeta');
+  meta.textContent=`✅ ${n} 行已影响  ${elapsed}s`;meta.className='results-meta ok';
+  appendMsg('ok',`✅ 执行成功，${n} 行受影响，耗时 ${elapsed}s`);
+  activeResTab='msg';document.querySelectorAll('.res-tab').forEach(x=>x.classList.toggle('active',x.dataset.rtab==='msg'));
+  renderMsgTab();
+}
+
+function runDDL(sql,elapsed){
+  lastQueryResult=null;document.getElementById('exportBtn').style.display='none';
+  const s=sql.toUpperCase().trimStart();
+  let op='执行';
+  if(s.startsWith('CREATE'))op='创建';
+  else if(s.startsWith('DROP'))op='删除';
+  else if(s.startsWith('ALTER'))op='修改';
+  else if(s.startsWith('TRUNCATE'))op='截断';
+  const meta=document.getElementById('resultsMeta');
+  meta.textContent=`✅ DDL ${op}成功  ${elapsed}s`;meta.className='results-meta ok';
+  appendMsg('ok',`✅ DDL 执行成功（${op}），耗时 ${elapsed}s`);
+  appendMsg('info',`💡 提示：DDL 操作已自动提交（Oracle DDL 隐式 COMMIT）`);
+  activeResTab='msg';document.querySelectorAll('.res-tab').forEach(x=>x.classList.toggle('active',x.dataset.rtab==='msg'));
+  renderMsgTab();
+}
+
+function runGeneric(sql,elapsed){
+  lastQueryResult=null;document.getElementById('exportBtn').style.display='none';
+  const meta=document.getElementById('resultsMeta');
+  meta.textContent=`✅ 执行完成  ${elapsed}s`;meta.className='results-meta ok';
+  appendMsg('ok',`✅ 执行成功，耗时 ${elapsed}s`);
+  activeResTab='msg';document.querySelectorAll('.res-tab').forEach(x=>x.classList.toggle('active',x.dataset.rtab==='msg'));
+  renderMsgTab();
+}
+
+function runExplain(sql,elapsed){
+  explainData=[
+    {ID:0,OPERATION:'SELECT STATEMENT',OPTIONS:'',OBJECT_NAME:'',ROWS:1,BYTES:'100',COST:3,TIME:'00:00:01'},
+    {ID:1,OPERATION:'NESTED LOOPS','OPTIONS':'',OBJECT_NAME:'',ROWS:1,BYTES:'100',COST:3,TIME:'00:00:01'},
+    {ID:2,OPERATION:'TABLE ACCESS',OPTIONS:'FULL',OBJECT_NAME:extractTableName(sql),ROWS:100,BYTES:'10K',COST:2,TIME:'00:00:01'},
+    {ID:3,OPERATION:'INDEX',OPTIONS:'UNIQUE SCAN',OBJECT_NAME:'PK_'+extractTableName(sql),ROWS:1,BYTES:'20',COST:1,TIME:'00:00:01'},
+  ];
+  const meta=document.getElementById('resultsMeta');
+  meta.textContent=`执行计划  ${elapsed}s`;meta.className='results-meta';
+  appendMsg('info',`📋 已获取执行计划，耗时 ${elapsed}s`);
+  activeResTab='explain';document.querySelectorAll('.res-tab').forEach(x=>x.classList.toggle('active',x.dataset.rtab==='explain'));
+  renderExplainTab();
+}
+
+function extractTableName(sql){
+  const m=sql.match(/FROM\s+([A-Z0-9_$.]+)/i);return m?m[1].toUpperCase():'TABLE_NAME';
+}
+
+function generateMockRows(sql){
+  // Generate plausible mock data based on SQL patterns
+  const tn=extractTableName(sql);
+  const n=Math.floor(Math.random()*15)+5;
+  const rows=[];
+  for(let i=1;i<=n;i++){
+    rows.push({
+      ID:i,
+      NAME:`${tn.slice(0,4)}_RECORD_${String(i).padStart(4,'0')}`,
+      STATUS:i%3===0?'INACTIVE':i%5===0?'PENDING':'ACTIVE',
+      CREATED_DATE:new Date(Date.now()-i*864e5*3).toLocaleDateString('zh-CN'),
+      AMOUNT:(Math.random()*9999+1).toFixed(2),
+      REMARK:i%4===0?null:`备注信息 ${i}`,
+    });
+  }
+  return rows;
+}
+
+function renderDataTab(){
+  const panel=document.getElementById('resultsPanel');
+  if(!lastQueryResult||!lastQueryResult.rows.length){
+    panel.innerHTML='<div class="result-placeholder"><div class="result-placeholder-ico">📊</div><div>无数据结果</div></div>';return;
+  }
+  const rows=lastQueryResult.rows;
+  const cols=Object.keys(rows[0]);
+  let html=`<table class="data-table"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach(row=>{
+    html+=`<tr>${cols.map(c=>{
+      const v=row[c];
+      if(v===null||v===undefined)return`<td class="td-null">NULL</td>`;
+      if(typeof v==='number'||/^\d+(\.\d+)?$/.test(String(v)))return`<td class="td-num">${v}</td>`;
+      if(/\d{4}[-/]\d{2}[-/]\d{2}/.test(String(v)))return`<td class="td-date">${v}</td>`;
+      return`<td>${v}</td>`;
+    }).join('')}</tr>`;
+  });
+  html+='</tbody></table>';
+  panel.innerHTML=html;
+}
+
+function renderMsgTab(){
+  const panel=document.getElementById('resultsPanel');
+  if(!msgLines.length){panel.innerHTML='<div class="result-placeholder"><div class="result-placeholder-ico">📋</div><div>暂无消息</div></div>';return;}
+  panel.innerHTML=`<div class="msg-output">${msgLines.map(m=>`<span class="msg-${m.type==='error'?'err':m.type==='ok'?'ok':m.type==='warn'?'warn':'info'}">${escHtml(m.text)}</span>`).join('\n')}</div>`;
+  panel.scrollTop=panel.scrollHeight;
+}
+
+function renderExplainTab(){
+  const panel=document.getElementById('resultsPanel');
+  if(!explainData){panel.innerHTML='<div class="result-placeholder"><div class="result-placeholder-ico">🔍</div><div>点击"执行计划"按钮获取</div></div>';return;}
+  const cols=['ID','OPERATION','OPTIONS','OBJECT_NAME','ROWS','BYTES','COST','TIME'];
+  let html=`<table class="data-table"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  explainData.forEach(row=>{
+    const indent='&nbsp;'.repeat((row.ID||0)*4);
+    html+=`<tr>${cols.map(c=>{
+      if(c==='OPERATION')return`<td>${indent}${row[c]}</td>`;
+      const v=row[c];
+      if(v===null||v===''||v===undefined)return`<td class="td-null">—</td>`;
+      if(typeof v==='number')return`<td class="td-num">${v}</td>`;
+      return`<td>${v}</td>`;
+    }).join('')}</tr>`;
+  });
+  html+='</tbody></table>';panel.innerHTML=html;
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function formatSql(){
+  let sql=sqlEditor.value;
+  const kws=['SELECT','FROM','WHERE','JOIN','LEFT JOIN','RIGHT JOIN','INNER JOIN','ON','AND','OR','ORDER BY','GROUP BY','HAVING','UNION','INSERT INTO','VALUES','UPDATE','SET','DELETE FROM','CREATE TABLE','ALTER TABLE','DROP TABLE','TRUNCATE TABLE','COMMIT','ROLLBACK','LIMIT','FETCH FIRST'];
+  kws.forEach(k=>{sql=sql.replace(new RegExp('\\b'+k+'\\b','gi'),'\n'+k);});
+  sql=sql.replace(/\n{2,}/g,'\n').trim();
+  sqlEditor.value=sql;updateLineNums();
+}
+
+function exportCsv(){
+  if(!lastQueryResult)return;
+  const rows=lastQueryResult.rows;const cols=Object.keys(rows[0]);
+  const csv=[cols.join(','),...rows.map(r=>cols.map(c=>{const v=r[c];if(v===null||v===undefined)return'';return`"${String(v).replace(/"/g,'""')}"`}).join(','))].join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`query_${Date.now()}.csv`;a.click();
+}
+
+// SQL History
+function renderSqlHist(){
+  const list=document.getElementById('sqlHistList');list.innerHTML='';
+  if(!sqlHistory.length){list.innerHTML='<div class="doc-empty">暂无保存的 SQL</div>';return;}
+  [...sqlHistory].sort((a,b)=>b.updatedAt-a.updatedAt).forEach(s=>{
+    const el=document.createElement('div');el.className='hist-item'+(s.id===activeSqlId?' active':'');
+    el.innerHTML=`<div class="hist-name">${s.name||'无标题'}<span class="hist-del" data-id="${s.id}">✕</span></div><div class="hist-meta">${fmtDate(s.updatedAt)}</div>`;
+    el.addEventListener('click',e=>{if(e.target.classList.contains('hist-del'))return;loadSql(s.id);});
+    el.querySelector('.hist-del').addEventListener('click',e=>{e.stopPropagation();delSqlHist(s.id);});
+    list.appendChild(el);
+  });
+}
+function saveSqlToHist(){
+  const sql=sqlEditor.value.trim();if(!sql)return;
+  const name=document.getElementById('sqlName').value.trim()||'SQL_'+Date.now();
+  if(activeSqlId){const s=sqlHistory.find(x=>x.id===activeSqlId);if(s){s.sql=sql;s.name=name;s.updatedAt=Date.now();lsSet('imc_sql_hist',sqlHistory);renderSqlHist();return;}}
+  const s={id:uid(),name,sql,createdAt:Date.now(),updatedAt:Date.now()};
+  sqlHistory.unshift(s);activeSqlId=s.id;lsSet('imc_sql_hist',sqlHistory);renderSqlHist();cloudSaveSql(s);
+  const btn=document.getElementById('saveSqlBtn');btn.textContent='✅ 已保存';setTimeout(()=>btn.textContent='💾 保存',1500);
+}
+function loadSql(id){activeSqlId=id;const s=sqlHistory.find(x=>x.id===id);if(!s)return;sqlEditor.value=s.sql;document.getElementById('sqlName').value=s.name;updateLineNums();renderSqlHist();}
+function delSqlHist(id){if(!confirm('确认删除？'))return;sqlHistory=sqlHistory.filter(x=>x.id!==id);if(activeSqlId===id)activeSqlId=null;lsSet('imc_sql_hist',sqlHistory);renderSqlHist();cloudDeleteSql(id);}
+document.getElementById('newSqlBtn').addEventListener('click',()=>{activeSqlId=null;sqlEditor.value='';document.getElementById('sqlName').value='新建查询';updateLineNums();renderSqlHist();});
+
+/* ════════════════════════════════════════════════════════════════
+   INIT - 策略：
+   1. 先用 DEFAULT_LINKS 保底（本地永远有数据可显示）
+   2. 从云端拉取数据，以 id 为 key 做双向合并
+   3. 本地有云端没有的 → upsert 推送上云
+   4. 云端有本地没有的 → 合并到本地
+   5. localStorage 只作缓存，DEFAULT_LINKS 是最终保底
+════════════════════════════════════════════════════════════════ */
+
+// 确保 links 始终含有全部默认卡片（防止 localStorage 丢数据）
+function ensureDefaultLinks() {
+  const existingIds = new Set(links.map(l => String(l.id)));
+  let added = 0;
+  DEFAULT_LINKS.forEach(dl => {
+    if (!existingIds.has(String(dl.id))) {
+      links.push(JSON.parse(JSON.stringify(dl)));
+      added++;
+    }
+  });
+  if (added > 0) {
+    lsSet('imc_links', links);
+    console.log('[ensureDefault] 补充缺失默认卡片 ' + added + ' 条');
+  }
+}
+
+// 双向合并：localArr 与 cloudArr 以 id 为 key 合并
+// - 本地独有 → upsert 到云端
+// - 云端独有 → 加入本地
+// - 两边都有 → 取 updatedAt 较新的
+async function mergeAndSync(sheetName, localArr, cloudArr) {
+  if (!cloudArr) {
+    console.warn('[merge] ' + sheetName + ' 云端返回 null，跳过合并，保持本地');
+    return localArr;
+  }
+
+  const cloudMap = new Map(cloudArr.map(r => [String(r.id), r]));
+  const localMap = new Map(localArr.map(r => [String(r.id), r]));
+
+  const toUpload = []; // 本地有、云端没有
+  const merged = [];
+
+  // 遍历本地
+  localArr.forEach(local => {
+    const key = String(local.id);
+    if (!cloudMap.has(key)) {
+      // 本地独有 → 需要推送
+      toUpload.push(local);
+      merged.push(local);
+    } else {
+      // 两边都有 → 取较新的
+      const cloud = cloudMap.get(key);
+      const localTs = Number(local.updatedAt) || 0;
+      const cloudTs = Number(cloud.updatedAt) || 0;
+      merged.push(cloudTs >= localTs ? cloud : local);
+    }
+  });
+
+  // 云端独有 → 加入本地
+  cloudArr.forEach(cloud => {
+    if (!localMap.has(String(cloud.id))) {
+      merged.push(cloud);
+    }
+  });
+
+  // 推送本地独有到云端
+  if (toUpload.length > 0) {
+    console.log('[merge] ' + sheetName + ': 推送本地独有 ' + toUpload.length + ' 条 → 云端');
+    for (const record of toUpload) {
+      try {
+        await gasPost({ action: 'upsert', sheet: sheetName, record });
+      } catch(e) {
+        console.warn('[merge] upsert 失败:', e);
+      }
+    }
+  }
+
+  console.log('[merge] ' + sheetName + ' 完成，共 ' + merged.length + ' 条');
+  return merged;
+}
+
+async function init() {
+  // Step 1: 先用默认数据确保页面立即可用
+  ensureDefaultLinks();
+  renderNav();
+  renderDocList();
+  renderSqlHist();
+
+  setSyncStatus('syncing', '云端同步中…');
+
+  // Step 2: 导航链接双向合并
+  try {
+    const cloudLinks = await cloudLoadLinks();
+    links = await mergeAndSync('links', links, cloudLinks);
+    lsSet('imc_links', links);
+    renderNav(); // 合并后刷新
+  } catch(e) {
+    console.warn('[init] links 同步异常:', e);
+  }
+
+  // Step 3: 文档双向合并
+  try {
+    const cloudDocs = await cloudLoadDocs();
+    docs = await mergeAndSync('documents', docs, cloudDocs);
+    lsSet('imc_docs', docs);
+    renderDocList();
+  } catch(e) {
+    console.warn('[init] docs 同步异常:', e);
+  }
+
+  // Step 4: SQL 历史双向合并
+  try {
+    const cloudSql = await cloudLoadSql();
+    sqlHistory = await mergeAndSync('sql_history', sqlHistory, cloudSql);
+    lsSet('imc_sql_hist', sqlHistory);
+    renderSqlHist();
+  } catch(e) {
+    console.warn('[init] sql 同步异常:', e);
+  }
+
+  setSyncStatus('ok', '已同步 ' + links.length + ' 个链接 / ' + docs.length + ' 个文档');
+  setTimeout(() => setSyncStatus('idle'), 4000);
+}
+if (!window._waitLogin) init();
+
+/* ════════════════════════════════════════════════════════════════
+   LOGIN
+   密码存储：SHA-256 哈希，不明文保存
+   会话：sessionStorage，关闭标签页需重新登录
+════════════════════════════════════════════════════════════════ */
+
+// ── 设置你的密码（修改这里）──────────────────────────────────────
+// 当前密码：Kk955832..+
+const PASSWORD_HASH = '4381aa9c1771d9d3527df41d08cef31e93cd38f8b5e8899dd17ebe6e96945c32';
+// 上面是 "IMC@2026" 的 SHA-256 哈希值
+// 如需修改密码，在浏览器控制台运行：
+//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('你的新密码'))
+//     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+// 把输出的哈希值替换上面的字符串即可
+// ────────────────────────────────────────────────────────────────
+
+const SESSION_KEY = 'imc_auth';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+async function tryLogin() {
+  const pass = document.getElementById('loginPass').value;
+  if (!pass) return;
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = '验证中…'; btn.disabled = true;
+  const hash = await sha256(pass);
+  if (hash === PASSWORD_HASH) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    const screen = document.getElementById('loginScreen');
+    screen.style.transition = 'opacity .4s';
+    screen.style.opacity = '0';
+    setTimeout(() => { screen.style.display = 'none'; init(); }, 400);
+  } else {
+    const err = document.getElementById('loginError');
+    err.classList.add('show');
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+    btn.textContent = '进入工作台 →'; btn.disabled = false;
+    setTimeout(() => err.classList.remove('show'), 3000);
+  }
+}
+
+// 检查 session
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  document.getElementById('loginScreen').style.display = 'none';
+  // init() 会在 DOMContentLoaded 后由原逻辑调用
+} else {
+  // 有登录屏时，阻止原 init() 自动执行，等登录后再调用
+  window._waitLogin = true;
+}
+
+// 大写锁定检测
+document.getElementById('loginPass').addEventListener('keyup', e => {
+  const caps = e.getModifierState && e.getModifierState('CapsLock');
+  document.getElementById('loginCaps').classList.toggle('show', caps);
+});
+// 回车登录
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryLogin();
+});
+document.getElementById('loginBtn').addEventListener('click', tryLogin);
+// 自动聚焦
+setTimeout(() => {
+  if (document.getElementById('loginScreen').style.display !== 'none') {
+    document.getElementById('loginPass').focus();
+  }
+}, 100);
+
+</script>
+</body>
+</html>
